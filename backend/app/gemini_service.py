@@ -19,7 +19,7 @@ class GeminiAIService:
         genai.configure(api_key=api_key)
         # Use the gemini-2.0-flash model as requested (using gemini-2.0-flash as per user request)
         self.model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.0-flash-lite",
             generation_config={
                 "temperature": 0.7,
                 "top_p": 0.95,

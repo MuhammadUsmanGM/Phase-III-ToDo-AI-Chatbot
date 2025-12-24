@@ -14,7 +14,7 @@ This document summarizes the discussions and work done on the Phase III AI Chatb
 - Successfully migrated the chatbot from using OpenAI API to Google's Gemini API
 - Integrated the `google-generativeai` SDK into the backend
 - Replaced the OpenAI client with a GeminiAIService implementation
-- Used the `gemini-2.0-flash` model as requested
+- Used the `gemini-2.0-flash-lite` model as requested
 - Implemented function calling capabilities to maintain all task operations (add, list, complete, delete, update tasks)
 
 ### 3. Backend Changes
