@@ -3,7 +3,6 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm # Added import
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
-from openai import OpenAI
 import os
 
 from app.database import create_db_and_tables, get_session
@@ -15,7 +14,8 @@ from app.security import (
     get_authorized_user # For path parameter authorization
 )
 from app import crud
-from app.task_mcp_tools import TaskMCPTools, execute_tool_call
+from app.task_mcp_tools import execute_tool_call
+from app.gemini_service import GeminiAIService
 
 app = FastAPI(
     title="Todo Full-Stack Web Application Backend",
@@ -179,206 +179,108 @@ def chat_with_assistant(
     )
 
     try:
-        # Initialize OpenAI client
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        # Initialize Gemini API service
+        gemini_service = GeminiAIService()
 
-        # Initialize MCP tools for this user
-        tools = TaskMCPTools(session, user_id)
-
-        # Prepare the tools for OpenAI
-        available_functions = {
-            "add_task": tools.add_task,
-            "list_tasks": tools.list_tasks,
-            "complete_task": tools.complete_task,
-            "delete_task": tools.delete_task,
-            "update_task": tools.update_task,
-        }
-
-        # Define the tools for the assistant
+        # Define the tools for Gemini (function calling)
         tools_list = [
             {
-                "type": "function",
-                "function": {
-                    "name": "add_task",
-                    "description": "Create a new task",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "title": {"type": "string", "description": "The task title"},
-                            "description": {"type": "string", "description": "The task description"}
-                        },
-                        "required": ["title"],
+                "name": "add_task",
+                "description": "Create a new task",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string", "description": "The task title"},
+                        "description": {"type": "string", "description": "The task description"}
                     },
-                },
+                    "required": ["title"]
+                }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "list_tasks",
-                    "description": "Retrieve tasks from the list",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "status": {"type": "string", "enum": ["all", "pending", "completed"], "description": "Filter tasks by status"}
-                        },
-                    },
-                },
+                "name": "list_tasks",
+                "description": "Retrieve tasks from the list",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "status": {"type": "string", "enum": ["all", "pending", "completed"], "description": "Filter tasks by status"}
+                    }
+                }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "complete_task",
-                    "description": "Mark a task as complete",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "task_id": {"type": "integer", "description": "The ID of the task to complete"}
-                        },
-                        "required": ["task_id"],
+                "name": "complete_task",
+                "description": "Mark a task as complete",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "task_id": {"type": "integer", "description": "The ID of the task to complete"}
                     },
-                },
+                    "required": ["task_id"]
+                }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "delete_task",
-                    "description": "Remove a task from the list",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "task_id": {"type": "integer", "description": "The ID of the task to delete"}
-                        },
-                        "required": ["task_id"],
+                "name": "delete_task",
+                "description": "Remove a task from the list",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "task_id": {"type": "integer", "description": "The ID of the task to delete"}
                     },
-                },
+                    "required": ["task_id"]
+                }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "update_task",
-                    "description": "Modify task title or description",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "task_id": {"type": "integer", "description": "The ID of the task to update"},
-                            "title": {"type": "string", "description": "The new title"},
-                            "description": {"type": "string", "description": "The new description"}
-                        },
-                        "required": ["task_id"],
+                "name": "update_task",
+                "description": "Modify task title or description",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "task_id": {"type": "integer", "description": "The ID of the task to update"},
+                        "title": {"type": "string", "description": "The new title"},
+                        "description": {"type": "string", "description": "The new description"}
                     },
-                },
+                    "required": ["task_id"]
+                }
             }
         ]
 
         # Get conversation history for context
         messages = crud.get_messages_by_conversation(session, conversation.id)
 
-        # Prepare messages for OpenAI
-        openai_messages = []
+        # Prepare messages for Gemini
+        gemini_messages = []
         for msg in messages:
-            openai_messages.append({
+            gemini_messages.append({
                 "role": msg.role,
                 "content": msg.content
             })
 
         # Add the new user message
-        openai_messages.append({
+        gemini_messages.append({
             "role": "user",
             "content": chat_request.message
         })
 
-        # Call OpenAI API with function calling
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # or gpt-4 if available
-            messages=openai_messages,
+        # Call Gemini API with function calling
+        response_content = gemini_service.chat_with_function_calling(
+            messages=gemini_messages,
             tools=tools_list,
-            tool_choice="auto",
+            db_session=session,
+            user_id=user_id
         )
 
-        response_message = response.choices[0].message
-        tool_calls = response_message.tool_calls
+        # Create assistant message
+        assistant_message = crud.create_message(
+            session,
+            conversation_id=conversation.id,
+            role="assistant",
+            content=response_content
+        )
 
-        # If the model wants to call functions
-        if tool_calls:
-            # Add the message with tool calls to the conversation
-            assistant_message = crud.create_message(
-                session,
-                conversation_id=conversation.id,
-                role="assistant",
-                content=response_message.content or "",
-                tool_calls=[{"id": tc.id, "function": {"name": tc.function.name, "arguments": tc.function.arguments}} for tc in tool_calls]
-            )
-
-            # Execute the tool calls
-            for tool_call in tool_calls:
-                function_name = tool_call.function.name
-                function_arguments = tool_call.function.arguments
-
-                # Use the safe function to execute the tool call
-                function_response = execute_tool_call(function_name, function_arguments, session, user_id)
-
-                # Add the tool response to the conversation
-                tool_response_message = crud.create_message(
-                    session,
-                    conversation_id=conversation.id,
-                    role="tool",
-                    content=str(function_response),
-                    tool_responses=function_response
-                )
-
-            # Make a second call to get the final response after tool execution
-            # Get all messages again including the tool responses
-            all_messages = crud.get_messages_by_conversation(session, conversation.id)
-
-            # Prepare messages for OpenAI
-            final_messages = []
-            for msg in all_messages:
-                final_messages.append({
-                    "role": msg.role if msg.role != 'tool' else 'function',  # OpenAI uses 'function' role for tool responses
-                    "content": msg.content
-                })
-
-            # Add the original user message if not already present
-            final_messages.append({
-                "role": "user",
-                "content": chat_request.message
-            })
-
-            # Get final response from OpenAI
-            final_response = client.chat.completions.create(
-                model="gpt-3.5-turbo",  # or gpt-4 if available
-                messages=final_messages,
-            )
-
-            final_content = final_response.choices[0].message.content
-
-            # Create final assistant message
-            final_assistant_message = crud.create_message(
-                session,
-                conversation_id=conversation.id,
-                role="assistant",
-                content=final_content
-            )
-
-            return ChatResponse(
-                response=final_content,
-                conversation_id=conversation.id,
-                message_id=final_assistant_message.id
-            )
-        else:
-            # No tool calls needed, return the response directly
-            assistant_message = crud.create_message(
-                session,
-                conversation_id=conversation.id,
-                role="assistant",
-                content=response_message.content
-            )
-
-            return ChatResponse(
-                response=response_message.content,
-                conversation_id=conversation.id,
-                message_id=assistant_message.id
-            )
+        return ChatResponse(
+            response=response_content,
+            conversation_id=conversation.id,
+            message_id=assistant_message.id
+        )
     except Exception as e:
         # In case of error, create an error response
         error_message = f"Sorry, I encountered an error processing your request: {str(e)}"
