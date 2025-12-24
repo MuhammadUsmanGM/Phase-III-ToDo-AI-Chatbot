@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
-import { tasksApi } from "@/lib/api";
+import { chatApi } from "@/lib/api";
 
 interface Message {
   id: number;
@@ -23,6 +23,7 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { token, userId } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -32,6 +33,18 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Auto-resize textarea based on content
+  const adjustTextareaHeight = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [inputMessage, adjustTextareaHeight]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !token || !userId) return;
@@ -78,7 +91,7 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -106,7 +119,7 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={onClose}
         >
           <motion.div
@@ -120,39 +133,39 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold flex items-center">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-5 w-5 mr-2" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
                     />
                   </svg>
                   AI Task Assistant
                 </h2>
-                <button 
+                <button
                   onClick={onClose}
                   className="text-white hover:text-gray-200 focus:outline-none"
                   aria-label="Close chat"
                 >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-6 w-6" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M6 18L18 6M6 6l12 12" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
                 </button>
@@ -212,19 +225,20 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
               <div className="flex items-end space-x-2">
                 <div className="flex-1 relative">
                   <textarea
+                    ref={textareaRef}
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyPress}
                     placeholder="Type your task command..."
                     className="w-full border border-gray-300 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                     rows={1}
-                    style={{ minHeight: "44px", maxHeight: "100px" }}
+                    style={{ minHeight: "44px", maxHeight: "150px" }}
                     disabled={isLoading || !token}
                   />
                   <button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isLoading || !token}
-                    className={`absolute right-2 bottom-2 p-1 rounded-full ${
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full ${
                       inputMessage.trim() && !isLoading && token
                         ? "bg-indigo-600 text-white hover:bg-indigo-700"
                         : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -233,7 +247,7 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
+                      className="h-4 w-4"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
