@@ -46,8 +46,31 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
     adjustTextareaHeight();
   }, [inputMessage, adjustTextareaHeight]);
 
+  // Focus the textarea when modal opens
+  useEffect(() => {
+    if (isOpen && textareaRef.current) {
+      // Use a slight delay to ensure the modal is fully rendered before focusing
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !token || !userId) return;
+    if (!inputMessage.trim()) return;
+
+    if (!token || !userId) {
+      // Show local error if not logged in
+      const authError: Message = {
+        id: Date.now(),
+        role: "assistant",
+        content: "Please log in to use the chat assistant.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, authError]);
+      return;
+    }
 
     // Add user message to UI immediately
     const userMessage: Message = {
@@ -110,7 +133,7 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
         }
       ]);
     }
-  }, [isOpen, messages.length]);
+  }, [isOpen]); // Removed messages.length to prevent re-initialization
 
   return (
     <AnimatePresence>
@@ -119,7 +142,7 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center p-4"
           onClick={onClose}
         >
           <motion.div
@@ -227,19 +250,25 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
                   <textarea
                     ref={textareaRef}
                     value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
+                    onChange={(e) => {
+                      setInputMessage(e.target.value);
+                    }}
+                    onInput={adjustTextareaHeight}
                     onKeyDown={handleKeyPress}
                     placeholder="Type your task command..."
-                    className="w-full border border-gray-300 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                    className="w-full border border-gray-300 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none overflow-hidden"
                     rows={1}
                     style={{ minHeight: "44px", maxHeight: "150px" }}
-                    disabled={isLoading || !token}
+                    disabled={isLoading}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   />
                   <button
                     onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isLoading || !token}
+                    disabled={!inputMessage.trim() || isLoading}
                     className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full ${
-                      inputMessage.trim() && !isLoading && token
+                      inputMessage.trim() && !isLoading
                         ? "bg-indigo-600 text-white hover:bg-indigo-700"
                         : "bg-gray-200 text-gray-400 cursor-not-allowed"
                     }`}
