@@ -140,6 +140,31 @@ export const tasksApi = {
     }),
 };
 
+// --- Chat Endpoints ---
+export const chatApi = {
+  sendMessage: (userId: string, token: string, message: string, conversationId?: number) =>
+    apiFetch<{ response: string; conversation_id: number; message_id: number }>(`/chat`, {
+      method: "POST",
+      token,
+      userId,
+      body: JSON.stringify({
+        message,
+        conversation_id: conversationId
+      })
+    }),
+  getConversations: (userId: string, token: string) =>
+    apiFetch<any[]>(`/conversations`, { method: "GET", token, userId }),
+  getConversation: (userId: string, conversationId: number, token: string) =>
+    apiFetch<any>(`/conversations/${conversationId}`, { method: "GET", token, userId }),
+  createConversation: (userId: string, token: string, title?: string) =>
+    apiFetch<any>(`/conversations`, {
+      method: "POST",
+      token,
+      userId,
+      body: JSON.stringify({ title })
+    }),
+};
+
 // Helper to get token from context or cookies for SSR/Server Components
 export function getAuthTokenFromContext(context: GetServerSidePropsContext) {
   // In Next.js App Router, typically you'd read cookies directly in Server Components

@@ -16,6 +16,7 @@ The existing Todo application consists of:
    - Slide-in chat modal component
    - Message display area with history
    - Input field for user messages
+   - Integration with OpenAI ChatKit
 
 2. **Backend API**
    - New chat endpoints in FastAPI
@@ -30,7 +31,7 @@ The existing Todo application consists of:
 
 4. **AI Integration**
    - OpenAI Assistant API
-   - Custom tools for task operations
+   - MCP tools for task operations
    - Natural language processing
 
 ## Implementation Approach
@@ -43,7 +44,7 @@ The existing Todo application consists of:
 ### Phase 1: Backend Implementation
 - Implement chat API endpoints
 - Create conversation management functionality
-- Integrate OpenAI Assistant with task operation tools
+- Integrate OpenAI Assistant with MCP task operation tools
 - Ensure proper authentication and authorization
 
 ### Phase 2: Frontend Implementation
@@ -65,31 +66,57 @@ The existing Todo application consists of:
 **conversations** table:
 - id: integer (primary key, auto-increment)
 - user_id: string (foreign key referencing users.id)
-- title: string (optional, auto-generated)
 - created_at: timestamp
 - updated_at: timestamp
-- is_active: boolean
 
 **messages** table:
 - id: integer (primary key, auto-increment)
 - conversation_id: integer (foreign key referencing conversations.id)
 - role: string (user, assistant, system, tool)
 - content: text
-- timestamp: timestamp
-- metadata: JSON (optional)
+- created_at: timestamp
+- tool_calls: JSON (optional, for storing tool call information)
+- tool_responses: JSON (optional, for storing tool responses)
 
 ## API Contract
 
 ### Chat Endpoint
-- POST /api/chat
-- Request: { message: string, conversation_id?: number }
-- Response: { response: string, conversation_id: number, message_id: number }
+- POST /api/{user_id}/chat
+- Request: { conversation_id?: number, message: string }
+- Response: { conversation_id: number, response: string, tool_calls?: array }
 - Requires JWT authentication
 
 ### Conversation Endpoints
-- GET /api/conversations - List user's conversations
-- GET /api/conversations/{id} - Get conversation with messages
-- POST /api/conversations - Create new conversation
+- GET /api/{user_id}/conversations - List user's conversations
+- GET /api/{user_id}/conversations/{id} - Get conversation with messages
+- POST /api/{user_id}/conversations - Create new conversation
+
+## MCP Tools Implementation
+
+### add_task Tool
+- Purpose: Create a new task
+- Parameters: user_id (string, required), title (string, required), description (string, optional)
+- Returns: task_id, status, title
+
+### list_tasks Tool
+- Purpose: Retrieve tasks from the list
+- Parameters: user_id (string, required), status (string, optional: "all", "pending", "completed")
+- Returns: Array of task objects
+
+### complete_task Tool
+- Purpose: Mark a task as complete
+- Parameters: user_id (string, required), task_id (integer, required)
+- Returns: task_id, status, title
+
+### delete_task Tool
+- Purpose: Remove a task from the list
+- Parameters: user_id (string, required), task_id (integer, required)
+- Returns: task_id, status, title
+
+### update_task Tool
+- Purpose: Modify task title or description
+- Parameters: user_id (string, required), task_id (integer, required), title (string, optional), description (string, optional)
+- Returns: task_id, status, title
 
 ## Security Considerations
 
@@ -102,6 +129,7 @@ The existing Todo application consists of:
 ## Dependencies
 
 - OpenAI Python SDK
+- Official MCP SDK
 - Additional database models
 - Frontend UI components
 - Authentication middleware extensions
@@ -110,6 +138,7 @@ The existing Todo application consists of:
 
 ### High Risk Items
 - OpenAI API integration and costs
+- MCP SDK integration complexity
 - Natural language processing accuracy
 - Security of AI interactions
 
@@ -117,3 +146,4 @@ The existing Todo application consists of:
 - Implement proper error handling and fallbacks
 - Thorough testing of various input types
 - Comprehensive security measures and validation
+- Gradual rollout with monitoring

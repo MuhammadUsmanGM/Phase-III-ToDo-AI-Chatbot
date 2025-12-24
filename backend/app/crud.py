@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlmodel import Session, select
-from app.models import User, Task
+from app.models import User, Task, Conversation, Message
 from app.schemas import UserCreate, TaskCreate, TaskUpdate
 from app.security import get_password_hash
 import datetime # Import datetime for utcnow
@@ -50,3 +50,52 @@ def update_task(session: Session, db_task: Task, task_update: TaskUpdate) -> Tas
 def delete_task(session: Session, db_task: Task):
     session.delete(db_task)
     session.commit()
+
+# --- Conversation CRUD ---
+def create_conversation(session: Session, user_id: str) -> Conversation:
+    conversation = Conversation(user_id=user_id)
+    session.add(conversation)
+    session.commit()
+    session.refresh(conversation)
+    return conversation
+
+def get_conversation_by_id(session: Session, conversation_id: int, user_id: str) -> Optional[Conversation]:
+    return session.exec(
+        select(Conversation)
+        .where(Conversation.id == conversation_id, Conversation.user_id == user_id)
+    ).first()
+
+def get_conversations_by_user(session: Session, user_id: str) -> List[Conversation]:
+    return session.exec(
+        select(Conversation)
+        .where(Conversation.user_id == user_id)
+    ).all()
+
+# --- Message CRUD ---
+def create_message(session: Session, conversation_id: int, role: str, content: str, tool_calls: dict = None, tool_responses: dict = None) -> Message:
+    message = Message(
+        conversation_id=conversation_id,
+        role=role,
+        content=content,
+        tool_calls=tool_calls,
+        tool_responses=tool_responses
+    )
+    session.add(message)
+    session.commit()
+    session.refresh(message)
+    return message
+
+def get_messages_by_conversation(session: Session, conversation_id: int) -> List[Message]:
+    return session.exec(
+        select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at)
+    ).all()
+
+def get_latest_messages(session: Session, conversation_id: int, limit: int = 10) -> List[Message]:
+    return session.exec(
+        select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at.desc())
+        .limit(limit)
+    ).all()

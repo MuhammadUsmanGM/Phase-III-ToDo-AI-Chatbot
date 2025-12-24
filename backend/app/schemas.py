@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from sqlmodel import SQLModel
 import datetime
 from pydantic import EmailStr # Added EmailStr import
@@ -39,3 +39,42 @@ class TaskRead(TaskBase):
 
 class TaskCompletionStatus(SQLModel):
     completed: bool
+
+# --- Chat Schemas ---
+
+class ChatRequest(SQLModel):
+    message: str
+    conversation_id: Optional[int] = None
+
+class ChatResponse(SQLModel):
+    response: str
+    conversation_id: int
+    message_id: Optional[int] = None
+
+class MessageBase(SQLModel):
+    conversation_id: int
+    role: str
+    content: str
+    tool_calls: Optional[Dict[str, Any]] = None
+    tool_responses: Optional[Dict[str, Any]] = None
+
+class MessageCreate(MessageBase):
+    pass
+
+class MessageRead(MessageBase):
+    id: int
+    created_at: datetime.datetime
+
+class ConversationBase(SQLModel):
+    user_id: str
+
+class ConversationCreate(ConversationBase):
+    pass
+
+class ConversationRead(ConversationBase):
+    id: int
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+class ConversationWithMessages(ConversationRead):
+    messages: List[MessageRead] = []
