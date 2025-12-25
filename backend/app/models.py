@@ -5,7 +5,8 @@ import uuid
 import sqlalchemy as sa
 
 class User(SQLModel, table=True):
-    # Note: Using default table name "user" to match existing database schema
+    __tablename__ = "users"  # Explicitly use "users" to match conversation constraint
+
     id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     email: str = Field(unique=True, index=True)
     hashed_password: str
@@ -25,14 +26,14 @@ class Task(SQLModel, table=True):
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
     updated_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
 
-    owner_id: str = Field(foreign_key="user.id")
+    owner_id: str = Field(foreign_key="users.id")
     owner: Optional["User"] = Relationship(back_populates="tasks")
 
 class Conversation(SQLModel, table=True):
     __tablename__ = "conversations"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: str = Field(foreign_key="user.id", index=True)
+    user_id: str = Field(foreign_key="users.id", index=True)
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
     updated_at: datetime.datetime = Field(default_factory=datetime.datetime.utcnow, nullable=False)
 
