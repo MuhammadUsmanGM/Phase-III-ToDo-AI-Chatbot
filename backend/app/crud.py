@@ -25,7 +25,9 @@ def get_tasks_by_owner(session: Session, owner_id: str) -> List[Task]:
     return session.exec(select(Task).where(Task.owner_id == owner_id)).all()
 
 def create_task(session: Session, task_create: TaskCreate, owner_id: str) -> Task:
-    task = Task.from_orm(task_create, update={'owner_id': owner_id})
+    task_data = task_create.model_dump()
+    task_data['owner_id'] = owner_id
+    task = Task(**task_data)
     session.add(task)
     session.commit()
     session.refresh(task)
@@ -73,13 +75,17 @@ def get_conversations_by_user(session: Session, user_id: str) -> List[Conversati
 
 # --- Message CRUD ---
 def create_message(session: Session, conversation_id: int, role: str, content: str, tool_calls: dict = None, tool_responses: dict = None) -> Message:
-    message = Message(
-        conversation_id=conversation_id,
-        role=role,
-        content=content,
-        tool_calls=tool_calls,
-        tool_responses=tool_responses
-    )
+    message_data = {
+        'conversation_id': conversation_id,
+        'role': role,
+        'content': content
+    }
+    if tool_calls is not None:
+        message_data['tool_calls'] = tool_calls
+    if tool_responses is not None:
+        message_data['tool_responses'] = tool_responses
+
+    message = Message(**message_data)
     session.add(message)
     session.commit()
     session.refresh(message)

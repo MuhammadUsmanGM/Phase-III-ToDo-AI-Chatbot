@@ -5,6 +5,7 @@ import uuid
 import sqlalchemy as sa
 
 class User(SQLModel, table=True):
+    # Note: Using default table name "user" to match existing database schema
     id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     email: str = Field(unique=True, index=True)
     hashed_password: str
