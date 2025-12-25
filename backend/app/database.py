@@ -28,6 +28,8 @@ engine = create_engine(
     }
 )
 
+from app.models import User
+
 def create_db_and_tables():
     """Create database tables based on SQLModel metadata."""
     SQLModel.metadata.create_all(engine)

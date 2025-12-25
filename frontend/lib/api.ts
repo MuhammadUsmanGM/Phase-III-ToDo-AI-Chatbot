@@ -23,7 +23,7 @@ async function apiFetch<T>(
   const { token, userId, headers, ...rest } = options;
   let url: string;
 
-  // Don't allow requests with invalid mock tokens
+  // Don't allow requests with invalid tokens (but allow mock tokens for development)
   if (token) {
     try {
       const headerBase64 = token.split(".")[0];
@@ -35,7 +35,7 @@ async function apiFetch<T>(
         // Check if the payload has the mock flag
         const payload = JSON.parse(atob(payloadBase64));
         if (payload?.isMock) {
-          throw new Error("Mock tokens are not allowed for API requests");
+          console.warn("Using mock token for API request - this should only be used for development");
         }
       }
     } catch (error) {
