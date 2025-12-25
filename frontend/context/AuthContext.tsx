@@ -14,6 +14,8 @@ interface AuthContextType {
   logout: () => void;
   mockLogin: () => void;
   isLoading: boolean;
+  isLoggingOut: boolean;
+  setIsLoggingOut: (loggingOut: boolean) => void;
   showExpirationNotification: boolean;
   setShowExpirationNotification: (show: boolean) => void;
 }
@@ -27,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const [showExpirationNotification, setShowExpirationNotification] = useState<boolean>(false);
   const router = useRouter();
 
@@ -133,13 +136,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   const logout = () => {
+    setIsLoggingOut(true); // Set logging out state
     Cookies.remove("token"); // Remove token from cookies
     setToken(null);
     setUserId(null);
     setUserEmail(null); // Clear email
     setUserName(null); // Clear name
     setIsAuthenticated(false);
-    router.push("/"); // Redirect to landing page after logout
+    router.push("/logout"); // Redirect to logout page to show loading state
   };
 
   const mockLogin = () => {
@@ -169,6 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         mockLogin,
         isLoading,
+        isLoggingOut,
+        setIsLoggingOut,
         showExpirationNotification,
         setShowExpirationNotification
       }}

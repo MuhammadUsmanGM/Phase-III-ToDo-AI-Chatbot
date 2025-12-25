@@ -10,6 +10,7 @@ import { useTaskFiltering } from '@/hooks/useTaskFiltering';
 import { Task, TaskStatus } from '@/types/task';
 import TaskStatistics from '@/components/TaskStatistics';
 import Navbar from "@/components/Navbar";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 export default function DashboardPage() {
   const [showAbout, setShowAbout] = useState(false);
@@ -172,8 +173,8 @@ export default function DashboardPage() {
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        Loading authentication...
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <LoadingSpinner />
       </div>
     );
   }
