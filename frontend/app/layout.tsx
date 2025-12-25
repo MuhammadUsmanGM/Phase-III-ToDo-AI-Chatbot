@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { AccessibilityProvider } from "../context/AccessibilityContext";
 import AuthExpirationNotification from "@/components/AuthExpirationNotification"; // Import the auth expiration notification
 import { ChatProvider } from "@/components/ChatProvider"; // Import the chat provider
+import { ToastProvider } from "@/components/ToastProvider"; // Import the toast provider
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,10 +55,12 @@ export default function RootLayout({
         >
           <AccessibilityProvider>
             <AuthProvider>
-              <ChatProvider>
-                <AuthExpirationNotification />
-                {children}
-              </ChatProvider>
+              <ToastProvider>
+                <ChatProvider>
+                  <AuthExpirationNotification />
+                  {children}
+                </ChatProvider>
+              </ToastProvider>
             </AuthProvider> {/* Wrap children with AuthProvider */}
           </AccessibilityProvider>
         </ThemeProvider>

@@ -5,6 +5,7 @@ import { tasksApi } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Task } from "@/types/task";
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from "./ToastProvider";
 
 interface TaskItemProps {
   task: Task;
@@ -19,8 +20,8 @@ export default function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
   const [editedPriority, setEditedPriority] = useState<'low' | 'medium' | 'high'>(task.priority || 'medium');
   const [editedDueDate, setEditedDueDate] = useState(task.due_date || "");
   const [loading, setLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { token, userId } = useAuth();
+  const { showToast } = useToast();
 
   const handleToggleComplete = async () => {
     if (!token || !userId) return;
@@ -74,17 +75,28 @@ export default function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
     try {
       await tasksApi.deleteTask(userId, task.id, token);
       onDelete(task.id);
+      showToast("Task deleted successfully!", "success");
     } catch (error) {
       console.error("Failed to delete task:", error);
-      alert("Failed to delete task.");
+      showToast("Failed to delete task. Please try again.", "error");
     } finally {
       setLoading(false);
-      setShowDeleteConfirm(false);
     }
   };
 
   const showDeleteConfirmation = () => {
-    setShowDeleteConfirm(true);
+    // Show a toast confirmation with action buttons
+    showToast(
+      `Are you sure you want to delete "${task.title}"?`,
+      "warning",
+      0, // Don't auto-dismiss
+      {
+        label: "Delete",
+        onClick: () => {
+          handleDelete();
+        }
+      }
+    );
   };
 
   return (
@@ -293,63 +305,7 @@ export default function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
       </div>
     </div>
 
-    {/* Stunning Delete Confirmation Modal */}
-    {showDeleteConfirm && (
-      <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 animate-fadeIn border border-gray-200 overflow-hidden">
-          <div className="p-6">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-bold text-gray-900">Delete Task</h3>
-                <p className="mt-2 text-gray-600">
-                  Are you sure you want to delete this task? This action cannot be undone.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(false)}
-              className="px-5 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-300 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center cursor-pointer"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Deleting...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Delete
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
+    {/* Delete confirmation is now handled with toast notifications */}
 
   </>
   );

@@ -3,59 +3,25 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import ProfileIcon from "@/components/ProfileIcon";
+import { useToast } from "@/components/ToastProvider";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmNewPassword, setConfirmNewPassword] = useState("");
-  const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
-  const [changePasswordSuccess, setChangePasswordSuccess] = useState<string | null>(null);
   const { isAuthenticated, userId, userEmail, userName, logout } = useAuth();
+  const { showToast } = useToast();
   const router = useRouter();
 
   const handleChangePassword = () => {
-    // Close profile dropdown and open change password modal
+    // Close profile dropdown and show info toast
     setShowProfileDropdown(false);
-    setShowChangePasswordModal(true);
+    showToast("Password change functionality is available in the settings page.", "info");
   };
 
-  const handleChangePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate passwords match
-    if (newPassword !== confirmNewPassword) {
-      setChangePasswordError("New passwords do not match");
-      return;
-    }
-
-    // Validate password strength
-    if (newPassword.length < 8) {
-      setChangePasswordError("Password must be at least 8 characters long");
-      return;
-    }
-
-    try {
-      // In a real app, this would call an API to change the password
-      // For now we'll just show a success message and close the modal
-      setChangePasswordSuccess("Password updated successfully!");
-
-      // Clear the form after a delay and close the modal
-      setTimeout(() => {
-        setShowChangePasswordModal(false);
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmNewPassword("");
-        setChangePasswordError(null);
-        setChangePasswordSuccess(null);
-      }, 1500);
-    } catch (error: any) {
-      setChangePasswordError(error.message || "Failed to change password. Please try again.");
-    }
+  const handleLogout = () => {
+    logout();
+    showToast("You have been logged out successfully!", "success");
   };
 
   useEffect(() => {
@@ -156,7 +122,11 @@ export default function Navbar() {
                     </div>
                     <div className="p-2">
                       <button
-                        onClick={handleChangePassword}
+                        onClick={() => {
+                          // Show info toast instead of opening modal
+                          setShowProfileDropdown(false);
+                          showToast("Password change functionality is available in the settings page.", "info");
+                        }}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:text-indigo-600 transition-all duration-300 font-medium cursor-pointer flex items-center rounded-lg group"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-gray-500 group-hover:text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -165,7 +135,20 @@ export default function Navbar() {
                         Change Password
                       </button>
                       <button
-                        onClick={() => setShowLogoutConfirm(true)}
+                        onClick={() => {
+                          // Show confirmation toast with action buttons
+                          showToast(
+                            "Are you sure you want to log out?",
+                            "warning",
+                            0, // Don't auto-dismiss
+                            {
+                              label: "Log Out",
+                              onClick: () => {
+                                handleLogout();
+                              }
+                            }
+                          );
+                        }}
                         className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-700 transition-all duration-300 font-medium cursor-pointer flex items-center rounded-lg group"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-red-500 group-hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,116 +161,7 @@ export default function Navbar() {
                 )}
 
                 {/* Change Password Modal */}
-                {showChangePasswordModal && (
-                  <div className="fixed inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 backdrop-blur-sm flex items-center justify-center z-50 p-4 w-full h-full">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 overflow-hidden transform transition-all duration-300 scale-95 animate-fadeIn">
-                      <div className="p-6">
-                        <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200">
-                          <h3 className="text-xl font-bold text-gray-900">Change Password</h3>
-                          <button
-                            onClick={() => {
-                              setShowChangePasswordModal(false);
-                              // Clear form fields and errors
-                              setCurrentPassword("");
-                              setNewPassword("");
-                              setConfirmNewPassword("");
-                              setChangePasswordError(null);
-                              setChangePasswordSuccess(null);
-                            }}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-
-                        {changePasswordSuccess ? (
-                          <div className="mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 rounded-lg text-sm">
-                            {changePasswordSuccess}
-                          </div>
-                        ) : null}
-
-                        {changePasswordError ? (
-                          <div className="mb-4 p-3 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-700 rounded-lg text-sm">
-                            {changePasswordError}
-                          </div>
-                        ) : null}
-
-                        <form onSubmit={handleChangePasswordSubmit}>
-                          <div className="mb-4">
-                            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                              Current Password
-                            </label>
-                            <input
-                              type="password"
-                              id="currentPassword"
-                              value={currentPassword}
-                              onChange={(e) => setCurrentPassword(e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                              placeholder="Enter current password"
-                              required
-                            />
-                          </div>
-
-                          <div className="mb-4">
-                            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                              New Password
-                            </label>
-                            <input
-                              type="password"
-                              id="newPassword"
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                              placeholder="Enter new password"
-                              required
-                            />
-                          </div>
-
-                          <div className="mb-6">
-                            <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                              Confirm New Password
-                            </label>
-                            <input
-                              type="password"
-                              id="confirmNewPassword"
-                              value={confirmNewPassword}
-                              onChange={(e) => setConfirmNewPassword(e.target.value)}
-                              className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                              placeholder="Confirm new password"
-                              required
-                            />
-                          </div>
-
-                          <div className="flex justify-end space-x-3">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setShowChangePasswordModal(false);
-                                setCurrentPassword("");
-                                setNewPassword("");
-                                setConfirmNewPassword("");
-                                setChangePasswordError(null);
-                                setChangePasswordSuccess(null);
-                              }}
-                              className="px-5 py-2.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-300 font-medium"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="submit"
-                              className="px-5 py-2.5 text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
-                              disabled={!currentPassword || !newPassword || !confirmNewPassword}
-                            >
-                              Update Password
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Change Password functionality is now handled with toast notifications */}
               </div>
             ) : (
               <>
@@ -368,8 +242,19 @@ export default function Navbar() {
                   </div>
                   <button
                     onClick={() => {
-                      setShowLogoutConfirm(true);
                       setIsOpen(false);
+                      // Show confirmation toast with action buttons
+                      showToast(
+                        "Are you sure you want to log out?",
+                        "warning",
+                        0, // Don't auto-dismiss
+                        {
+                          label: "Log Out",
+                          onClick: () => {
+                            handleLogout();
+                          }
+                        }
+                      );
                     }}
                     className="w-full text-left px-6 py-4 rounded-xl text-lg font-medium text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 transition-all duration-300 cursor-pointer flex items-center"
                   >
@@ -402,54 +287,7 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Stunning Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 backdrop-blur-sm flex items-center justify-center z-50 p-4 w-full h-full">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 animate-fadeIn border border-gray-200 overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-xl font-bold text-gray-900">Log Out</h3>
-                  <p className="mt-2 text-gray-600">
-                    Are you sure you want to log out? You'll need to sign in again to access your tasks.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(false)}
-                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-300 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  logout();
-                  setShowLogoutConfirm(false);
-                  setShowProfileDropdown(false);
-                }}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center cursor-pointer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Log Out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Logout confirmation is now handled with toast notifications */}
     </nav>
   );
 }
