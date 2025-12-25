@@ -61,14 +61,14 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
     if (!inputMessage.trim()) return;
 
     if (!token || !userId) {
-      // Show local error if not logged in
-      const authError: Message = {
+      // Show sign-in message if not logged in
+      const authMessage: Message = {
         id: Date.now(),
         role: "assistant",
-        content: "Please log in to use the chat assistant.",
+        content: "Please sign in to interact with the AI assistant.",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, authError]);
+      setMessages((prev) => [...prev, authMessage]);
       return;
     }
 
@@ -123,7 +123,7 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
 
   // Example initial messages to show the chat interface
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if (isOpen && messages.length === 0 && token && userId) {
       setMessages([
         {
           id: 1,
@@ -132,8 +132,17 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
           timestamp: new Date(),
         }
       ]);
+    } else if (isOpen && messages.length === 0 && (!token || !userId)) {
+      setMessages([
+        {
+          id: 1,
+          role: "assistant",
+          content: "Welcome! Sign in to unlock the AI assistant and start managing your tasks with AI support.",
+          timestamp: new Date(),
+        }
+      ]);
     }
-  }, [isOpen]); // Removed messages.length to prevent re-initialization
+  }, [isOpen, token, userId]); // Added token and userId to dependency array
 
   return (
     <AnimatePresence>
@@ -245,52 +254,91 @@ const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
 
             {/* Input Area */}
             <div className="border-t border-gray-200 p-4 bg-white">
-              <div className="flex items-end space-x-2">
-                <div className="flex-1 relative">
-                  <textarea
-                    ref={textareaRef}
-                    value={inputMessage}
-                    onChange={(e) => {
-                      setInputMessage(e.target.value);
-                    }}
-                    onInput={adjustTextareaHeight}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Type your task command..."
-                    className="w-full border border-gray-300 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none overflow-hidden"
-                    rows={1}
-                    style={{ minHeight: "44px", maxHeight: "150px" }}
-                    disabled={isLoading}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                  />
+              {!token || !userId ? (
+                <div className="flex flex-col items-center justify-center py-6">
+                  <div className="text-center mb-6">
+                    <p className="text-gray-600 mb-4 text-lg">Sign in to unlock the AI assistant</p>
+                    <div className="inline-flex items-center px-4 py-1.5 bg-indigo-100/80 backdrop-blur-sm rounded-full mb-4">
+                      <span className="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                      <span className="text-indigo-800 font-medium text-sm">Boost your productivity today</span>
+                    </div>
+                  </div>
                   <button
-                    onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isLoading}
-                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full ${
-                      inputMessage.trim() && !isLoading
-                        ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    }`}
-                    aria-label="Send message"
+                    onClick={() => {
+                      onClose();
+                      window.location.href = "/login";
+                    }}
+                    className="relative px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 overflow-hidden group cursor-pointer"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <span className="relative z-10 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 group-hover:-rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                      </svg>
+                      Sign In to Continue
+                    </span>
+                    <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-800 to-purple-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
                   </button>
+                  <p className="text-gray-500 text-sm mt-4">
+                    Don't have an account?{" "}
+                    <button
+                      onClick={() => {
+                        onClose();
+                        window.location.href = "/register";
+                      }}
+                      className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors cursor-pointer"
+                    >
+                      Sign up
+                    </button>
+                  </p>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-end space-x-2">
+                  <div className="flex-1 relative">
+                    <textarea
+                      ref={textareaRef}
+                      value={inputMessage}
+                      onChange={(e) => {
+                        setInputMessage(e.target.value);
+                      }}
+                      onInput={adjustTextareaHeight}
+                      onKeyDown={handleKeyPress}
+                      placeholder="Type your task command..."
+                      className="w-full border border-gray-300 rounded-2xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none overflow-hidden"
+                      rows={1}
+                      style={{ minHeight: "44px", maxHeight: "150px" }}
+                      disabled={isLoading}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={!inputMessage.trim() || isLoading}
+                      className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full ${
+                        inputMessage.trim() && !isLoading
+                          ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                          : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      }`}
+                      aria-label="Send message"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="text-xs text-gray-500 mt-2 text-center">
-                Ask to add, complete, delete, or view tasks
+                {!token || !userId ? "Sign in to use the AI assistant" : "Ask to add, complete, delete, or view tasks"}
               </div>
             </div>
           </motion.div>

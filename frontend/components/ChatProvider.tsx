@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, createContext, useContext, ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import FloatingChatButton from "@/components/FloatingChatButton";
 import ChatModal from "@/components/ChatModal";
 
@@ -26,6 +28,12 @@ interface ChatProviderProps {
 
 export const ChatProvider = ({ children }: ChatProviderProps) => {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const pathname = usePathname();
+
+  // Define auth pages where chat button should be hidden
+  const authPages = ["/login", "/register", "/logout"];
+  const isAuthPage = authPages.includes(pathname);
 
   const openChat = () => setIsChatOpen(true);
   const closeChat = () => setIsChatOpen(false);
@@ -33,7 +41,8 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
   return (
     <ChatContext.Provider value={{ isChatOpen, openChat, closeChat }}>
       {children}
-      <FloatingChatButton onClick={openChat} />
+      {/* Only show the floating chat button if not on auth pages - regardless of auth status */}
+      {!isAuthPage && <FloatingChatButton onClick={openChat} />}
       <ChatModal isOpen={isChatOpen} onClose={closeChat} />
     </ChatContext.Provider>
   );
