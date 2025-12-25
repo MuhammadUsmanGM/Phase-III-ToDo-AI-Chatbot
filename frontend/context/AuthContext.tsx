@@ -12,7 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (token: string) => void;
   logout: () => void;
-  mockLogin: () => void;
+  mockLogin: () => void; // Still available for backward compatibility but disabled
   isLoading: boolean;
   isLoggingOut: boolean;
   setIsLoggingOut: (loggingOut: boolean) => void;
@@ -147,18 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const mockLogin = () => {
-    // Create a mock token with "none" algorithm (insecure, for testing only)
-    // Format: header.payload.signature
-    const header = btoa(JSON.stringify({ alg: "none", typ: "JWT", isMock: true }));
-    const payload = btoa(JSON.stringify({
-      sub: "1",
-      email: "mock@example.com",
-      name: "Mock User",
-      exp: Math.floor(Date.now() / 1000) + 3600 // Expires in 1 hour
-    }));
-    const mockToken = `${header}.${payload}.`; // Empty signature
-
-    login(mockToken);
+    // Mock login is disabled - use real authentication
+    console.warn("Mock login is disabled. Please use real authentication.");
   };
 
   return (
