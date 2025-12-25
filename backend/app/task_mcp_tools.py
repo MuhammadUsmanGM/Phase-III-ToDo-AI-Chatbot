@@ -1,7 +1,6 @@
 import os
 import json
 from typing import Dict, Any, List
-from openai import OpenAI
 from app.crud import get_tasks_by_owner, create_task, get_task_by_id_and_owner, update_task, delete_task
 from app.schemas import TaskCreate, TaskUpdate
 from sqlmodel import Session
@@ -14,7 +13,6 @@ class TaskMCPTools:
     def __init__(self, db_session: Session, user_id: str):
         self.db_session = db_session
         self.user_id = user_id
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     def add_task(self, title: str, description: str = None) -> Dict[str, Any]:
         """
