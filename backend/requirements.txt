@@ -10,4 +10,5 @@ bcrypt==4.0.1
 email-validator>=2.0.0
 python-multipart==0.0.20
 google-generativeai==0.8.4
-model-context-protocol==0.2.0
+mcp-1.25.0
+model-context-protocol @ git+https://github.com/modelcontextprotocol/python-sdk.git
