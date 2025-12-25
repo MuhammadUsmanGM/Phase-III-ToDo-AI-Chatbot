@@ -7,7 +7,7 @@ import os
 
 from app.database import create_db_and_tables, get_session
 from app.models import User, Task, Conversation, Message # Ensure User is imported
-from app.schemas import UserCreate, Token, TaskCreate, TaskRead, TaskUpdate, TaskCompletionStatus, ChatRequest, ChatResponse # Added TaskCompletionStatus
+from app.schemas import UserCreate, Token, TaskCreate, TaskRead, TaskUpdate, TaskCompletionStatus, ChatRequest, ChatResponse, ConversationRead, ConversationWithMessages # Added TaskCompletionStatus and conversation-related schemas
 from app.security import (
     get_password_hash, verify_password,
     create_access_token, get_current_user,
@@ -66,7 +66,7 @@ def login_for_access_token(
 # --- Task Endpoints ---
 @app.get("/api/{user_id}/tasks", response_model=List[TaskRead])
 def read_tasks(
-    user_id: int,
+    user_id: str,  # Changed from int to str to match User.id type
     session: Session = Depends(get_session),
     current_user: User = Depends(get_authorized_user) # Authorization check
 ):
@@ -75,7 +75,7 @@ def read_tasks(
 
 @app.post("/api/{user_id}/tasks", response_model=TaskRead, status_code=status.HTTP_201_CREATED)
 def create_task_for_user(
-    user_id: int,
+    user_id: str,  # Changed from int to str to match User.id type
     task: TaskCreate,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_authorized_user) # Authorization check
@@ -85,7 +85,7 @@ def create_task_for_user(
 
 @app.get("/api/{user_id}/tasks/{task_id}", response_model=TaskRead)
 def read_single_task(
-    user_id: int,
+    user_id: str,  # Changed from int to str to match User.id type
     task_id: int,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_authorized_user) # Authorization check
@@ -97,7 +97,7 @@ def read_single_task(
 
 @app.put("/api/{user_id}/tasks/{task_id}", response_model=TaskRead)
 def update_single_task(
-    user_id: int,
+    user_id: str,  # Changed from int to str to match User.id type
     task_id: int,
     task_update: TaskUpdate, # Corrected to TaskUpdate
     session: Session = Depends(get_session),
@@ -113,7 +113,7 @@ def update_single_task(
 
 @app.patch("/api/{user_id}/tasks/{task_id}/complete", response_model=TaskRead)
 def toggle_task_completion(
-    user_id: int,
+    user_id: str,  # Changed from int to str to match User.id type
     task_id: int,
     completed_status: TaskCompletionStatus, # Corrected to TaskCompletionStatus
     session: Session = Depends(get_session),
@@ -130,7 +130,7 @@ def toggle_task_completion(
 
 @app.delete("/api/{user_id}/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_single_task(
-    user_id: int,
+    user_id: str,  # Changed from int to str to match User.id type
     task_id: int,
     session: Session = Depends(get_session),
     current_user: User = Depends(get_authorized_user) # Authorization check

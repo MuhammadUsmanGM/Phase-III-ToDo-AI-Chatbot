@@ -71,7 +71,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
         raise credentials_exception
     
     # Fetch user from DB using the ID
-    user = session.get(User, int(user_id)) # User ID in JWT should be an int
+    user = session.get(User, user_id) # User ID is now a string/UUID
     if user is None:
         raise credentials_exception
     return user
@@ -83,7 +83,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 # --- Authorization Dependency ---
 async def get_authorized_user(
-    user_id: int, # Path parameter for user_id
+    user_id: str, # Path parameter for user_id - using string to support UUIDs
     current_user: User = Depends(get_current_user)
 ) -> User:
     if current_user.id != user_id:

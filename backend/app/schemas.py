@@ -14,7 +14,7 @@ class Token(SQLModel):
     token_type: str
 
 class TokenData(SQLModel):
-    id: Optional[int] = None # User ID stored in JWT 'sub' claim
+    id: Optional[str] = None # User ID stored in JWT 'sub' claim - using string to support UUIDs
 
 # --- Task Schemas ---
 
@@ -35,7 +35,7 @@ class TaskRead(TaskBase):
     id: int
     created_at: datetime.datetime
     updated_at: datetime.datetime
-    owner_id: int # Include owner_id for API response
+    owner_id: str # Include owner_id for API response - changed to string to match User.id
 
 class TaskCompletionStatus(SQLModel):
     completed: bool
